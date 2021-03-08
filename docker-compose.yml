@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  app:
+    build: ./docker/app
+    working_dir: /memo
+    hostname: app
+    # dockerのコンテナはinit: trueを設定しないと、指定したコマンドPID 1 に設定されてしまう。
+    # PID 1だとシグナルハンドリングうまく行かないケースがある。
+    init: true
+    # デーモンで起動するとプロセスが起動してすぐに終了しないように設定する。
+    # https://qiita.com/toshihirock/items/22de12f99b5c40365369
+    # https://qiita.com/reflet/items/dd65f9ffef2a2fcfcf30
+    tty: true
+    ports:
+      - "3000:3000"
+      - "3306:3306"
+    volumes:
+      - "memo-sync:/memo"
+      - "mysql:/var/run/mysqld/:ro"
+
+  mysql:
+    image: mysql:8.0
+    depends_on:
+      - app
+    # appのネットワーク内でmysqlを立てる
+    network_mode: service:app
+    command: "--max-allowed-packet=32M"
+    environment:
+      # パスワードなしでmysqlにログインできる
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      # dbを永続化
+      - "db:/var/lib/mysql"
+      # appにmysql.sockを渡すため
+      - "mysql:/var/run/mysqld/"
+
+volumes:
+  memo-sync:
+    # Compose の外ですでに作成済みの volume を指定する場合は ture
+    # docker-compose up 時に volume を作成しない。
+    # かつ、指定した volume が存在しないとエラーを raise します。
+    external: true
+  db:
+  mysql:

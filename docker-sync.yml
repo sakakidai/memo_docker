@@ -1,0 +1,6 @@
+version: "2"
+syncs:
+  memo-sync:
+    src: ${LOCAL_FILE_PATH}
+    sync_strategy: 'unison'
+    sync_excludes: ['.gitignore']
